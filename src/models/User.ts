@@ -10,7 +10,5 @@ const users = pgTable("users", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
-export const userRelations = relations(users, ({ many }) => {
-	return { userChats: many(Chats) }
-});
+
 export default users

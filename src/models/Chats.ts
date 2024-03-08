@@ -12,7 +12,6 @@ const Chats = pgTable("chats", {
     createdAt: timestamp("createdAt").defaultNow(),
 })
 
-export const chatRelations = relations(Chats, (({ one }) => {
-    return { chatsUsers: one(users) }
-}))
+
 export default Chats
+
