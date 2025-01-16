@@ -5,10 +5,7 @@ import userRoutes from "./routes/user"
 import cors from "cors"
 import { createServer } from "http";
 import { Server } from "socket.io";
-import scoketInit from "./socket";
-import db from "./drizzle";
-import Chats from "./models/Chats";
-import SocketRoom from "./models/SocketRoom";
+import createSocketInit from "./socket";
 dotenv.config()
 const app = express()
 app.use(express.json())
@@ -18,10 +15,13 @@ const io = new Server(httpServer,{
         origin:"http://localhost:3000"
     }
 })
+export type SocketServer = typeof io
+const socketInit = createSocketInit(io);
 
-io.on("connection",scoketInit)
+io.on("connection", socketInit);
 app.use(express.json())
 app.use(cors())
+
 const API_PREFIX = '/api';
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/user`, userRoutes);

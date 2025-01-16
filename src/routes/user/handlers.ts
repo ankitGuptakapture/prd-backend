@@ -8,7 +8,7 @@ export const findUsers = async (req: Request, res: Response) => {
     try {
         const name = req.query.name as string
         const getUsers = await db.query.users.findMany({
-            where: and(ne(users.id, req?.decoded?.id), or(ilike(users.name, name), ilike(users.email, name)))
+            where: and(ne(users.id, req?.decoded?.id), or(ilike(users.name, `%${name}%`), ilike(users.email, `%${name}%`)))
         })
         return res.status(200).send({ success: true, data: getUsers })
     } catch (error) {

@@ -1,5 +1,5 @@
 
-import { pgTable, varchar, timestamp, serial } from "drizzle-orm/pg-core"
+import { pgTable, varchar, timestamp, serial,boolean } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import Chats from "./Chats";
 const users = pgTable("users", {
@@ -8,6 +8,7 @@ const users = pgTable("users", {
 	email: varchar("email", { length: 256 }).notNull().unique(),
 	password: varchar("password", { length: 256 }).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	isOnline:boolean("is_online").default(false).notNull()
 });
 
 
