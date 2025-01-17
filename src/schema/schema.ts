@@ -1,25 +1,27 @@
 
 import { relations } from "drizzle-orm"
 import users from "@/models/User"
-// export const userRelations = relations(users, ({ many }) => {
-//     return { userChats: many(Chats) }
-// });
-// export const chatRelations = relations(Chats, (({ one }) => {
-//     return {
-//         sender: one(users, {
-//             fields: [Chats.senderId],
-//             references: [users.id]
-//         })
-//     }
-// }))
-// export const chatRelationReciver = relations(Chats, (({ one }) => {
-//     return {
-//         reciever: one(users, {
-//             fields: [Chats.recieverId],
-//             references: [users.id]
-//         })
-//     }
-// }))
+import Chats from "@/models/Chats"
+import MessageThread from "@/models/MessageThread"
+export const userRelations = relations(users, ({ many }) => {
+    return { userChats: many(Chats) }
+});
+export const messageThreadWithUser = relations(MessageThread, (({ one }) => {
+    return {
+        messages: one(users, {
+            fields: [MessageThread.userId],
+            references: [users.id]
+        })
+    }
+}))
+export const chatsWithMessageThread = relations(Chats, (({ one }) => {
+    return {
+        chats: one(MessageThread, {
+            fields: [Chats.id],
+            references: [MessageThread.id]
+        })
+    }
+}))
 // export const socketRoomRelations = relations(SocketRoom, (({ many }) => {
 //     return {
 //         chatRooms: many(Chats),
@@ -53,4 +55,4 @@ import users from "@/models/User"
 // }))
 
 
-export { users } 
+export { users,Chats,MessageThread } 

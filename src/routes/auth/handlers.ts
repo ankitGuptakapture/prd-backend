@@ -12,6 +12,11 @@ export const register = async (req: Request, res: Response) => {
         if (!errors.isEmpty()) {
             return res.status(422).send({ ...errors.mapped() })
         }
+
+        const findUser = await db.query.users.findFirst({where:eq(users.email,email)})
+        if (findUser) {
+            return res.status(422).send({ message: "email already exists" })
+        }
         const hashed = await hash(password, 10)
         const user = await db.insert(users).values({
             email,

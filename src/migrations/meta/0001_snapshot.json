@@ -1,6 +1,6 @@
 {
-  "id": "7e2caf7b-3b06-483d-907b-0714eb214eb1",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "b30dbe7d-61bc-4b24-a699-6c27c798264c",
+  "prevId": "7e2caf7b-3b06-483d-907b-0714eb214eb1",
   "version": "5",
   "dialect": "pg",
   "tables": {
@@ -93,6 +93,12 @@
           "name": "id",
           "type": "serial",
           "primaryKey": true,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
           "notNull": true
         },
         "senderId": {
