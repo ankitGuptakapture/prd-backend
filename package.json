@@ -43,9 +43,11 @@
     "typescript": "^5.3.3"
   },
   "tsup": {
-    "entry": ["src"],
+    "entry": ["src/index.ts"],
     "splitting": false,
     "sourcemap": true,
-    "clean": true
+    "clean": true,
+    "noExternal": ["!**/*.sql"],
+    "external": ["**/*.sql"]
   }
 }
