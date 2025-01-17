@@ -1,5 +1,6 @@
 
 import { relations } from "drizzle-orm"
+import users from "@/models/User"
 // export const userRelations = relations(users, ({ many }) => {
 //     return { userChats: many(Chats) }
 // });
@@ -52,4 +53,4 @@ import { relations } from "drizzle-orm"
 // }))
 
 
-// export { users, Chats, SocketRoom } 
+export { users } 
