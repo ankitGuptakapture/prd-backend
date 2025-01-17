@@ -1,13 +1,26 @@
 import { Request, Response } from "express";
 import chatGpt from "../../OpenAi";
 import pdf from "pdf-parse";
+import db from "@/drizzle";
+import Chats from "@/models/Chats";
 export const handleUserPropmts = async (req: Request, res: Response) => {
   try {
-    const { prompt }: { prompt: string } = req.body;
+    const { prompt, threadId }: { prompt: string; threadId?: number } =
+      req.body;
+    const { id } = req.decoded;
+
     const resp = await chatGpt.chat.completions.create({
       model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
     });
+    if (threadId) {
+      await db.insert(Chats).values({
+        threadId,
+        userMessage: prompt,
+        userId: id,
+        gptResponse: resp.choices[0].message.content,
+      });
+    }
     return res.status(200).json({ data: resp, message: "Successs" });
   } catch (error) {
     console.log(error);
