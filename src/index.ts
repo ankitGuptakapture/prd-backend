@@ -1,7 +1,5 @@
 import express from "express";
 import dotenv from "dotenv";
-import authRoutes from "./routes/auth";
-import userRoutes from "./routes/user";
 import cors from "cors";
 dotenv.config();
 const app = express();
@@ -20,6 +18,5 @@ app.get(`${API_PREFIX}/health-check`, (req, res) => {
     });
   }
 });
-app.use(`${API_PREFIX}/auth`, authRoutes);
-app.use(`${API_PREFIX}/user`, userRoutes);
+
 app.listen(8080, () => console.log(`up and running 8080`));
