@@ -1,10 +1,14 @@
-import express from 'express'
-import { handleUserPropmts } from './handlers';
+import express from "express";
+import { handleUserPropmts, handleFileUpload } from "./handlers";
+import { uploadBuffer } from "@/middleware";
 
 const router = express.Router();
 
+router.post("/prompt-chat", handleUserPropmts);
+router.post(
+  "/file-text-extractor",
+  uploadBuffer.single("file"),
+  handleFileUpload
+);
 
-router.post("/prompt-chat",handleUserPropmts)
-
-
-export default router
+export default router;
