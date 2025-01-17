@@ -43,7 +43,7 @@
     "typescript": "^5.3.3"
   },
   "tsup": {
-    "entry": ["src/index.ts"],
+    "entry": ["src","!src/migrations/*"],
     "splitting": false,
     "sourcemap": true,
     "clean": true,
