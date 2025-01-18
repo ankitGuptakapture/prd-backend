@@ -15,6 +15,13 @@
       "when": 1737140706648,
       "tag": "0001_sticky_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1737213827867,
+      "tag": "0002_parched_lake",
+      "breakpoints": true
     }
   ]
 }

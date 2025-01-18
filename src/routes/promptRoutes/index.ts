@@ -8,6 +8,7 @@ const router = express.Router();
 router.post("/prompt-chat",checkToken, handleUserPropmts);
 router.post(
   "/file-text-extractor",
+  checkToken,
   uploadBuffer.single("file"),
   handleFileUpload
 );

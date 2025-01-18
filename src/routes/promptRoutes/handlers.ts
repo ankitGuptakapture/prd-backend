@@ -4,33 +4,39 @@ import type { ChatCompletionMessageParam } from "openai/resources";
 import pdf from "pdf-parse";
 import db from "@/drizzle";
 import Chats from "@/models/Chats";
+import Project from "@/models/Project";
+import { or } from "drizzle-orm";
 export const handleUserPropmts = async (req: Request, res: Response) => {
   try {
-    const { prompt, threadId }: { prompt: string; threadId?: string } =
+    const { prompt, threadId, projectId }: { prompt: string; threadId?: string; projectId?: string } =
       req.body;
     const { id } = req.decoded;
-    console.log(typeof threadId, "req.body");
+
 
     let messages: Array<ChatCompletionMessageParam> = [
       { role: "user", content: prompt },
     ];
 
-    if (threadId) {
+    if (threadId || projectId) {
+
       let prevPrompt = { ...messages[0] };
       prevPrompt.role = "assistant";
       const previousMessages = await db.query.Chats.findMany({
         where: (chats, { eq, and }) =>
-          and(eq(chats.threadId, parseInt(threadId))),
+          or(eq(chats.threadId, parseInt(threadId || "0")), eq(chats.projectId, parseInt(projectId || "0"))),
         orderBy: (chats, { asc }) => [asc(chats.createdAt)],
       });
+      if (previousMessages.length === 0) {
+        return res.status(400).json({ message: " please check the provided context id" });
+      }
       let userMessages = previousMessages.flatMap((msg) => [
         { role: "user", content: msg.userMessage || "" },
       ]) as ChatCompletionMessageParam[];
       let gptResponses = previousMessages.flatMap((msg) => [
         { role: "system", content: msg.gptResponse || "" },
       ]) as ChatCompletionMessageParam[];
-      messages = [...userMessages, ...gptResponses, ...messages];
-      console.log(messages, "messsages");
+      messages = [...userMessages, ...gptResponses, prevPrompt];
+
     }
     const resp = await chatGpt.chat.completions.create({
       model: "gpt-4o",
@@ -56,8 +62,9 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
+    const { id } = req.decoded
     const fileBuffer = req.file.buffer;
-    const { prompt } = req.body;
+    const { prompt, projectDeadline, title, description } = req.body;
     const pdfData = await pdf(fileBuffer);
     const response = await chatGpt.chat.completions.create({
       model: "gpt-4o",
@@ -70,17 +77,37 @@ export const handleFileUpload = async (req: Request, res: Response) => {
               type: "text",
               text: prompt,
             },
+            {
+              type: "text",
+              text: description
+            }
           ],
         },
       ],
-      max_tokens: 4096,
+      temperature: 0.8
     });
+    const createdProject = await db.insert(Project).values({
+      name: title,
+      description,
+      userId: id,
+      projectDeadline: projectDeadline
+    }).returning()
+    await db.insert(Chats).values({
+      projectId: createdProject[0].id,
+      userId: id,
+      userMessage: `
+      ${prompt}
+      ${description}
+      `,
+      gptResponse: response.choices[0].message.content
+    })
     return res.status(200).json({
       data: response,
+      projectId: createdProject[0].id,
       message: "PDF text extracted successfully",
     });
   } catch (error) {
     console.error("Error processing PDF:", error);
-    return res.status(500).json({ message: "Error processing PDF file" });
+    return res.status(500).json({ message: "Error processing PDF file", error });
   }
 };

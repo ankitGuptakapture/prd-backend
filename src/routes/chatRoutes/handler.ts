@@ -50,21 +50,4 @@ export const getThreadMessages = async (req: Request, res: Response) => {
   }
 };
 
-export const sendMessage = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.decoded;
-    const { threadId, message } = req.body;
-    const chat = await db
-      .insert(Chats)
-      .values({
-        threadId,
-        userMessage: message,
-        userId: id,
-      })
-      .returning();
-    return res.status(200).json({ data: chat[0], message: "success" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
+
