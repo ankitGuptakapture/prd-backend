@@ -11,22 +11,26 @@ export const handleUserPropmts = async (req: Request, res: Response) => {
     const { id } = req.decoded;
     console.log(typeof threadId, "req.body");
 
-    let messages: Array<ChatCompletionMessageParam> = [{ role: "user", content: prompt }];
+    let messages: Array<ChatCompletionMessageParam> = [
+      { role: "user", content: prompt },
+    ];
 
     if (threadId) {
-      let prevPrompt = {...messages[0]}
-      prevPrompt.role = "assistant"
+      let prevPrompt = { ...messages[0] };
+      prevPrompt.role = "assistant";
       const previousMessages = await db.query.Chats.findMany({
         where: (chats, { eq, and }) =>
           and(eq(chats.threadId, parseInt(threadId))),
         orderBy: (chats, { asc }) => [asc(chats.createdAt)],
       });
-      console.log(previousMessages, "previousMessages");
-      messages = previousMessages
-        .flatMap((msg) => [
-          { role:msg.userMessage? "user":"system", content: (msg.userMessage ?? msg.gptResponse )|| ""  },
-        ])
-        messages.push(prevPrompt)            
+      let userMessages = previousMessages.flatMap((msg) => [
+        { role: "user", content: msg.userMessage || "" },
+      ]) as ChatCompletionMessageParam[];
+      let gptResponses = previousMessages.flatMap((msg) => [
+        { role: "system", content: msg.gptResponse || "" },
+      ]) as ChatCompletionMessageParam[];
+      messages = [...userMessages, ...gptResponses, ...messages];
+      console.log(messages, "messsages");
     }
     const resp = await chatGpt.chat.completions.create({
       model: "gpt-4o",
@@ -34,7 +38,7 @@ export const handleUserPropmts = async (req: Request, res: Response) => {
     });
     if (threadId) {
       await db.insert(Chats).values({
-        threadId:parseInt(threadId),
+        threadId: parseInt(threadId),
         userMessage: prompt,
         userId: id,
         gptResponse: resp.choices[0].message.content,
