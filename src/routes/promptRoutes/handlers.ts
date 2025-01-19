@@ -66,11 +66,12 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     }
     const { id } = req.decoded
     const fileBuffer = req.file.buffer;
-    await fs.mkdir(path.join(process.cwd(),"src", 'uploads'), { recursive: true });
-    const uploadsDir = path.join(process.cwd(),"src", 'uploads');
+    await fs.mkdir(path.join(process.cwd(), 'uploads'), { recursive: true });
+    const uploadsDir = path.join(process.cwd(), 'uploads');
     const fileName = `${Date.now()}-${req.file.originalname}`;
     const filePath = path.join(uploadsDir, fileName);
     await fs.writeFile(filePath, fileBuffer);
+    console.log(fileName,filePath)
     const { prompt, projectDeadline, title, description } = req.body;
     const pdfData = await pdf(fileBuffer);
     const response = await chatGpt.chat.completions.create({
