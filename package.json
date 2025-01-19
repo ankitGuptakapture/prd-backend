@@ -50,7 +50,8 @@
   "tsup": {
     "entry": [
       "src",
-      "!src/migrations/*"
+      "!src/migrations/*",
+      "!src/uploads/*"
     ],
     "splitting": false,
     "sourcemap": true,
