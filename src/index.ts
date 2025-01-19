@@ -7,9 +7,12 @@ import promptRoutes from "./routes/promptRoutes"
 import authRotes from "./routes/auth"
 import chatRoutes from "./routes/chatRoutes"
 import projectRoutes from "./routes/projectRoutes"
+import path from "path";
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use("/uploads",express.static(path.join(__dirname, 'uploads')));
+console.log(path.join(__dirname, 'uploads'))
 const PORT = process.env.PORT || 8080;
 const API_PREFIX = "/api"
 app.use(`${API_PREFIX}/project`,projectRoutes);

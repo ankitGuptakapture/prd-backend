@@ -6,6 +6,8 @@ import db from "@/drizzle";
 import Chats from "@/models/Chats";
 import Project from "@/models/Project";
 import { or } from "drizzle-orm";
+import path from "path";
+import fs from "fs/promises";
 export const handleUserPropmts = async (req: Request, res: Response) => {
   try {
     const { prompt, threadId, projectId }: { prompt: string; threadId?: string; projectId?: string } =
@@ -64,6 +66,10 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     }
     const { id } = req.decoded
     const fileBuffer = req.file.buffer;
+    const uploadsDir = path.join(process.cwd(),"src", 'uploads');
+    const fileName = `${Date.now()}-${req.file.originalname}`;
+    const filePath = path.join(uploadsDir, fileName);
+    await fs.writeFile(filePath, fileBuffer);
     const { prompt, projectDeadline, title, description } = req.body;
     const pdfData = await pdf(fileBuffer);
     const response = await chatGpt.chat.completions.create({
@@ -90,7 +96,8 @@ export const handleFileUpload = async (req: Request, res: Response) => {
       name: title,
       description,
       userId: id,
-      projectDeadline: projectDeadline
+      projectDeadline: projectDeadline,
+      filePath:`${req.protocol}://${req.get('host')}/uploads/${fileName}`
     }).returning()
     await db.insert(Chats).values({
       projectId: createdProject[0].id,
@@ -103,7 +110,7 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     })
     return res.status(200).json({
       data: response,
-      projectId: createdProject[0].id,
+      project: createdProject[0],
       message: "PDF text extracted successfully",
     });
   } catch (error) {
