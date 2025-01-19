@@ -7,7 +7,7 @@ const Project = pgTable("project", {
     description:text("description").default(""),
     userId:integer("userId").references(()=>users.id).notNull(),
     createdAt:date("createdAt").defaultNow(),
-    projectDeadline:date("projectDealine"),
+    projectDeadline:varchar("projectDealine"),
     filePath:varchar("filePath")
 })
 

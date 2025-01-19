@@ -8,6 +8,14 @@ import Project from "@/models/Project";
 import { or } from "drizzle-orm";
 import path from "path";
 import fs from "fs/promises";
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: 'dovcd2rmf', 
+  api_key: '562886346185529', 
+  api_secret: "XCuTqTEml2JINqlnbPXf0XJFi0A"
+});
+
 export const handleUserPropmts = async (req: Request, res: Response) => {
   try {
     const { prompt, threadId, projectId }: { prompt: string; threadId?: string; projectId?: string } =
@@ -26,7 +34,7 @@ export const handleUserPropmts = async (req: Request, res: Response) => {
       const previousMessages = await db.query.Chats.findMany({
         where: (chats, { eq, and }) =>
           or(eq(chats.threadId, parseInt(threadId || "0")), eq(chats.projectId, parseInt(projectId || "0"))),
-        orderBy: (chats, { asc }) => [asc(chats.createdAt)],
+          orderBy: (chats, { asc }) => [asc(chats.createdAt)],
       });
       if (previousMessages.length === 0) {
         return res.status(400).json({ message: " please check the provided context id" });
@@ -64,14 +72,21 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
-    const { id } = req.decoded
+    const { id } = req.decoded;
     const fileBuffer = req.file.buffer;
-    await fs.mkdir(path.join(process.cwd(), 'uploads'), { recursive: true });
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    const fileName = `${Date.now()}-${req.file.originalname}`;
-    const filePath = path.join(uploadsDir, fileName);
-    await fs.writeFile(filePath, fileBuffer);
-    console.log(fileName,filePath)
+    const uploadResponse = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: 'uploads',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(fileBuffer);
+    });
+
     const { prompt, projectDeadline, title, description } = req.body;
     const pdfData = await pdf(fileBuffer);
     const response = await chatGpt.chat.completions.create({
@@ -99,7 +114,7 @@ export const handleFileUpload = async (req: Request, res: Response) => {
       description,
       userId: id,
       projectDeadline: projectDeadline,
-      filePath:`${req.protocol}://${req.get('host')}/uploads/${fileName}`
+      filePath: (uploadResponse as any).secure_url // Use the Cloudinary URL
     }).returning()
     await db.insert(Chats).values({
       projectId: createdProject[0].id,
