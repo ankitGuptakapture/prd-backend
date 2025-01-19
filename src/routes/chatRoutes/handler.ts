@@ -3,6 +3,7 @@ import MessageThread from "@/models/MessageThread";
 import db from "@/drizzle";
 import { Request, Response } from "express";
 import Chats from "@/models/Chats";
+import chatGpt from "@/OpenAi";
 export const getThreads = async (req: Request, res: Response) => {
   try {
     const { id } = req.decoded;
@@ -20,6 +21,7 @@ export const createThread = async (req: Request, res: Response) => {
   try {
     const { id } = req.decoded;
     const { title } = req.body;
+
     const thread = await db
       .insert(MessageThread)
       .values({
@@ -27,6 +29,16 @@ export const createThread = async (req: Request, res: Response) => {
         title,
       })
       .returning();
+    const resp = await chatGpt.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: title }],
+    })
+    await db.insert(Chats).values({
+      threadId: thread[0].id,
+      userId: id,
+      userMessage: title,
+      gptResponse: resp.choices[0].message.content,
+    });
     return res.status(200).json({ data: thread[0], message: "success" });
   } catch (error) {
     console.error(error);
@@ -38,7 +50,7 @@ export const getThreadMessages = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { id: userId } = req.decoded;
-    console.log(req.params, "paramsss",userId);
+    console.log(req.params, "paramsss", userId);
     const messages = await db.query.Chats.findMany({
       where: and(eq(Chats.threadId, parseInt(id)), eq(Chats.userId, userId)),
       orderBy: (chats) => [chats.createdAt],
