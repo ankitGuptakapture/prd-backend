@@ -9,7 +9,7 @@ export const userRelations = relations(users, ({ many }) => {
 });
 export const messageThreadWithUser = relations(users, (({ many }) => {
     return {
-        messages: many(MessageThread)
+        messages: many(MessageThread,)
     }
 }))
 export const chatsWithMessageThread = relations(Chats, (({ one }) => {
@@ -20,6 +20,21 @@ export const chatsWithMessageThread = relations(Chats, (({ one }) => {
         })
     }
 }))
+
+export const projectWithChats = relations(Project, ({ many }) => ({
+    chats: many(Chats, { relationName: 'projectChats' })
+}));
+
+
+export const chatsWithProject = relations(Chats, ({ one }) => ({
+    chatsWithProject: one(Project, {
+       fields: [Chats.projectId],
+       references: [Project.id],
+       relationName: 'projectChats'
+    })
+}));
+
+
 
 
 export { users,Chats,MessageThread,Project } 

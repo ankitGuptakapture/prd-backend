@@ -8,10 +8,17 @@ export const getChatsByProjectId = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { id: userId } = req.decoded;
-        const getChatsWithProject = await db.select().from(Project)
-            .where(and(eq(Project.id, parseInt(id)), eq(Project.userId, userId)))
-            .leftJoin(Chats, eq(Chats.projectId, Project.id))
-            .orderBy(Chats.createdAt)
+        const getChatsWithProject = await db.query.Project.findFirst({
+            where: and(
+                eq(Project.id, parseInt(id)),
+                eq(Project.userId, userId)
+            ),
+            with: {
+                chats: {
+                    orderBy: () => [Chats.createdAt]
+                }
+            }
+        });
         return res.status(200).json({ data: getChatsWithProject, message: "Success" });
     } catch (error) {
         console.log(error);

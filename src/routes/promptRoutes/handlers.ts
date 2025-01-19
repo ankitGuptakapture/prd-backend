@@ -60,6 +60,14 @@ export const handleUserPropmts = async (req: Request, res: Response) => {
         gptResponse: resp.choices[0].message.content,
       });
     }
+    if (projectId) {
+      await db.insert(Chats).values({
+        projectId: parseInt(projectId),
+        userMessage: prompt,
+        userId: id,
+        gptResponse: resp.choices[0].message.content,
+      });
+    }
     return res.status(200).json({ data: resp, message: "Successs" });
   } catch (error) {
     console.log(error);
