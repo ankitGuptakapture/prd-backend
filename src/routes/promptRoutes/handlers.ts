@@ -66,6 +66,7 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     }
     const { id } = req.decoded
     const fileBuffer = req.file.buffer;
+    await fs.mkdir(path.join(process.cwd(),"src", 'uploads'), { recursive: true });
     const uploadsDir = path.join(process.cwd(),"src", 'uploads');
     const fileName = `${Date.now()}-${req.file.originalname}`;
     const filePath = path.join(uploadsDir, fileName);
