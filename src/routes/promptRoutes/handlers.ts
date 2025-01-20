@@ -11,8 +11,8 @@ import fs from "fs/promises";
 import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({
-  cloud_name: 'dovcd2rmf', 
-  api_key: '562886346185529', 
+  cloud_name: 'dovcd2rmf',
+  api_key: '562886346185529',
   api_secret: "XCuTqTEml2JINqlnbPXf0XJFi0A"
 });
 
@@ -34,7 +34,7 @@ export const handleUserPropmts = async (req: Request, res: Response) => {
       const previousMessages = await db.query.Chats.findMany({
         where: (chats, { eq, and }) =>
           or(eq(chats.threadId, parseInt(threadId || "0")), eq(chats.projectId, parseInt(projectId || "0"))),
-          orderBy: (chats, { asc }) => [asc(chats.createdAt)],
+        orderBy: (chats, { asc }) => [asc(chats.createdAt)],
       });
       if (previousMessages.length === 0) {
         return res.status(400).json({ message: " please check the provided context id" });
@@ -82,7 +82,13 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     }
     const { id } = req.decoded;
     const fileBuffer = req.file.buffer;
+    
+    const { prompt, projectDeadline, title, description, isSummary } = req.body;
+   
     const uploadResponse = await new Promise((resolve, reject) => {
+      if (isSummary) {
+        return resolve(true)
+      }
       cloudinary.uploader.upload_stream(
         {
           resource_type: 'raw',
@@ -95,8 +101,12 @@ export const handleFileUpload = async (req: Request, res: Response) => {
       ).end(fileBuffer);
     });
 
-    const { prompt, projectDeadline, title, description } = req.body;
+   
+
+
     const pdfData = await pdf(fileBuffer);
+
+
     const response = await chatGpt.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -117,27 +127,35 @@ export const handleFileUpload = async (req: Request, res: Response) => {
       ],
       temperature: 0.8
     });
-    const createdProject = await db.insert(Project).values({
-      name: title,
-      description,
-      userId: id,
-      projectDeadline: projectDeadline,
-      filePath: (uploadResponse as any).secure_url // Use the Cloudinary URL
-    }).returning()
-    await db.insert(Chats).values({
-      projectId: createdProject[0].id,
-      userId: id,
-      userMessage: `
-      ${prompt}
-      ${description}
-      `,
-      gptResponse: response.choices[0].message.content
-    })
-    return res.status(200).json({
-      data: response,
-      project: createdProject[0],
-      message: "PDF text extracted successfully",
-    });
+    if (!isSummary) {
+
+      const createdProject = await db.insert(Project).values({
+        name: title,
+        description,
+        userId: id,
+        projectDeadline: projectDeadline,
+        filePath: (uploadResponse as any).secure_url // Use the Cloudinary URL
+      }).returning()
+      await db.insert(Chats).values({
+        projectId: createdProject[0].id,
+        userId: id,
+        userMessage: `
+        ${prompt}
+        ${description}
+        `,
+        gptResponse: response.choices[0].message.content
+      })
+      return res.status(200).json({
+        data: response,
+        project: createdProject[0],
+        message: "PDF text extracted successfully",
+      });
+    } else {
+      return res.status(200).json({
+        data: response,
+        message: "PDF text extracted successfully",
+      });
+    }
   } catch (error) {
     console.error("Error processing PDF:", error);
     return res.status(500).json({ message: "Error processing PDF file", error });
