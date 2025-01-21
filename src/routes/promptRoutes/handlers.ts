@@ -36,16 +36,14 @@ export const handleUserPropmts = async (req: Request, res: Response) => {
           or(eq(chats.threadId, parseInt(threadId || "0")), eq(chats.projectId, parseInt(projectId || "0"))),
         orderBy: (chats, { asc }) => [asc(chats.createdAt)],
       });
-      if (previousMessages.length === 0) {
-        return res.status(400).json({ message: " please check the provided context id" });
-      }
+   
       let userMessages = previousMessages.flatMap((msg) => [
         { role: "user", content: msg.userMessage || "" },
       ]) as ChatCompletionMessageParam[];
       let gptResponses = previousMessages.flatMap((msg) => [
         { role: "system", content: msg.gptResponse || "" },
       ]) as ChatCompletionMessageParam[];
-      messages = [...userMessages, ...gptResponses, prevPrompt];
+      messages = previousMessages.length ?[...userMessages, ...gptResponses, prevPrompt]:messages
 
     }
     const resp = await chatGpt.chat.completions.create({

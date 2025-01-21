@@ -29,10 +29,6 @@ export const createThread = async (req: Request, res: Response) => {
         title,
       })
       .returning();
-    const resp = await chatGpt.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: title }],
-    })
     return res.status(200).json({ data: thread[0], message: "success" });
   } catch (error) {
     console.error(error);
