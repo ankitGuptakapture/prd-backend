@@ -33,12 +33,6 @@ export const createThread = async (req: Request, res: Response) => {
       model: "gpt-4o",
       messages: [{ role: "user", content: title }],
     })
-    await db.insert(Chats).values({
-      threadId: thread[0].id,
-      userId: id,
-      userMessage: title,
-      gptResponse: resp.choices[0].message.content,
-    });
     return res.status(200).json({ data: thread[0], message: "success" });
   } catch (error) {
     console.error(error);
