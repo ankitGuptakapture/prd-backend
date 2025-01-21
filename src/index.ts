@@ -8,6 +8,8 @@ import authRotes from "./routes/auth"
 import chatRoutes from "./routes/chatRoutes"
 import projectRoutes from "./routes/projectRoutes"
 import path from "path";
+import db from "./drizzle";
+import ProjectSummary from "./models/ProjectSummary";
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -18,6 +20,10 @@ const API_PREFIX = "/api"
 app.use(`${API_PREFIX}/project`,projectRoutes);
 app.use(`${API_PREFIX}/ai`, promptRoutes);
 app.use(`${API_PREFIX}/chat`,chatRoutes);
+// const deleteData = async()=>{
+// await db.delete(ProjectSummary)
+// }
+// deleteData()
 app.use(`${API_PREFIX}/auth`,authRotes);
 app.get(`${API_PREFIX}/health-check`, (req, res) => {
   try {

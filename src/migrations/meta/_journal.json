@@ -36,6 +36,13 @@
       "when": 1737304142695,
       "tag": "0004_fancy_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1737440589301,
+      "tag": "0005_clumsy_bedlam",
+      "breakpoints": true
     }
   ]
 }

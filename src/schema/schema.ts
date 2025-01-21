@@ -4,6 +4,7 @@ import users from "@/models/User"
 import Chats from "@/models/Chats"
 import MessageThread from "@/models/MessageThread"
 import Project from "@/models/Project"
+import ProjectSummary from "@/models/ProjectSummary"
 export const userRelations = relations(users, ({ many }) => {
     return { userChats: many(Chats) }
 });
@@ -37,4 +38,4 @@ export const chatsWithProject = relations(Chats, ({ one }) => ({
 
 
 
-export { users,Chats,MessageThread,Project } 
+export { users,Chats,MessageThread,Project,ProjectSummary } 

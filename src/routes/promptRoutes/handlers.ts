@@ -1,3 +1,4 @@
+import ProjectSummary from "@/models/ProjectSummary";
 import { Request, Response } from "express";
 import chatGpt from "../../OpenAi";
 import type { ChatCompletionMessageParam } from "openai/resources";
@@ -5,46 +6,51 @@ import pdf from "pdf-parse";
 import db from "@/drizzle";
 import Chats from "@/models/Chats";
 import Project from "@/models/Project";
-import { or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import path from "path";
 import fs from "fs/promises";
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
-  cloud_name: 'dovcd2rmf',
-  api_key: '562886346185529',
-  api_secret: "XCuTqTEml2JINqlnbPXf0XJFi0A"
+  cloud_name: "dovcd2rmf",
+  api_key: "562886346185529",
+  api_secret: "XCuTqTEml2JINqlnbPXf0XJFi0A",
 });
 
 export const handleUserPropmts = async (req: Request, res: Response) => {
   try {
-    const { prompt, threadId, projectId }: { prompt: string; threadId?: string; projectId?: string } =
-      req.body;
+    const {
+      prompt,
+      threadId,
+      projectId,
+    }: { prompt: string; threadId?: string; projectId?: string } = req.body;
     const { id } = req.decoded;
-
 
     let messages: Array<ChatCompletionMessageParam> = [
       { role: "user", content: prompt },
     ];
 
     if (threadId || projectId) {
-
       let prevPrompt = { ...messages[0] };
       prevPrompt.role = "assistant";
       const previousMessages = await db.query.Chats.findMany({
         where: (chats, { eq, and }) =>
-          or(eq(chats.threadId, parseInt(threadId || "0")), eq(chats.projectId, parseInt(projectId || "0"))),
+          or(
+            eq(chats.threadId, parseInt(threadId || "0")),
+            eq(chats.projectId, parseInt(projectId || "0"))
+          ),
         orderBy: (chats, { asc }) => [asc(chats.createdAt)],
       });
-   
+
       let userMessages = previousMessages.flatMap((msg) => [
         { role: "user", content: msg.userMessage || "" },
       ]) as ChatCompletionMessageParam[];
       let gptResponses = previousMessages.flatMap((msg) => [
         { role: "system", content: msg.gptResponse || "" },
       ]) as ChatCompletionMessageParam[];
-      messages = previousMessages.length ?[...userMessages, ...gptResponses, prevPrompt]:messages
-
+      messages = previousMessages.length
+        ? [...userMessages, ...gptResponses, prevPrompt]
+        : messages;
     }
     const resp = await chatGpt.chat.completions.create({
       model: "gpt-4o",
@@ -80,30 +86,28 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     }
     const { id } = req.decoded;
     const fileBuffer = req.file.buffer;
-    
+
     const { prompt, projectDeadline, title, description, isSummary } = req.body;
-   
+
     const uploadResponse = await new Promise((resolve, reject) => {
       if (isSummary) {
-        return resolve(true)
+        return resolve(true);
       }
-      cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'raw',
-          folder: 'uploads',
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      ).end(fileBuffer);
+      cloudinary.uploader
+        .upload_stream(
+          {
+            resource_type: "raw",
+            folder: "uploads",
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        )
+        .end(fileBuffer);
     });
 
-   
-
-
     const pdfData = await pdf(fileBuffer);
-
 
     const response = await chatGpt.chat.completions.create({
       model: "gpt-4o",
@@ -118,22 +122,24 @@ export const handleFileUpload = async (req: Request, res: Response) => {
             },
             {
               type: "text",
-              text: description
-            }
+              text: description,
+            },
           ],
         },
       ],
-      temperature: 0.8
+      temperature: 0.8,
     });
     if (!isSummary) {
-
-      const createdProject = await db.insert(Project).values({
-        name: title,
-        description,
-        userId: id,
-        projectDeadline: projectDeadline,
-        filePath: (uploadResponse as any).secure_url // Use the Cloudinary URL
-      }).returning()
+      const createdProject = await db
+        .insert(Project)
+        .values({
+          name: title,
+          description,
+          userId: id,
+          projectDeadline: projectDeadline,
+          filePath: (uploadResponse as any).secure_url, // Use the Cloudinary URL
+        })
+        .returning();
       await db.insert(Chats).values({
         projectId: createdProject[0].id,
         userId: id,
@@ -141,8 +147,8 @@ export const handleFileUpload = async (req: Request, res: Response) => {
         ${prompt}
         ${description}
         `,
-        gptResponse: response.choices[0].message.content
-      })
+        gptResponse: response.choices[0].message.content,
+      });
       return res.status(200).json({
         data: response,
         project: createdProject[0],
@@ -156,8 +162,61 @@ export const handleFileUpload = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error("Error processing PDF:", error);
-    return res.status(500).json({ message: "Error processing PDF file", error });
+    return res
+      .status(500)
+      .json({ message: "Error processing PDF file", error });
   }
 };
 
+export const getSummary = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.decoded;
+    const { projectId, summarizeType, prompt } = req.body;
 
+    const projectSummary = await db.query.ProjectSummary.findMany({
+      where: and(
+        eq(ProjectSummary.userId, id),
+        eq(ProjectSummary.projectId, parseInt(projectId)),
+        eq(ProjectSummary.summaryOf, summarizeType)
+      ),
+    });
+    if (projectSummary.length) {
+      return res
+        .status(200)
+        .json({ data: projectSummary[0], message: "success" });
+    } else {
+      const fileBuffer = req.file?.buffer;
+      if (!fileBuffer) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      const pdfData = await pdf(fileBuffer);
+      const response = await chatGpt.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: pdfData.text },
+              {
+                type: "text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        temperature: 0.8,
+      });
+
+   const summary =    await db.insert(ProjectSummary).values({
+        summary: response.choices[0].message.content,
+        userId: id,
+        projectId: parseInt(projectId),
+        summaryOf: summarizeType,
+      }).returning()
+      return res.status(200).json({
+        data: summary[0],
+        message: "PDF text extracted successfully",
+      });
+    }
+  } catch (error) {}
+};
